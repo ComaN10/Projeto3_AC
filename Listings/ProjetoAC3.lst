@@ -1,0 +1,121 @@
+C51 COMPILER V9.60.7.0   PROJETOAC3                                                        05/11/2023 11:16:23 PAGE 1   
+
+
+C51 COMPILER V9.60.7.0, COMPILATION OF MODULE PROJETOAC3
+OBJECT MODULE PLACED IN .\Objects\ProjetoAC3.obj
+COMPILER INVOKED BY: C:\Keil_v5\C51\BIN\C51.EXE ProjetoAC3.c OPTIMIZE(8,SPEED) BROWSE DEBUG OBJECTEXTEND PRINT(.\Listing
+                    -s\ProjetoAC3.lst) TABS(2) OBJECT(.\Objects\ProjetoAC3.obj)
+
+line level    source
+
+   1          #include <reg51.h>
+   2           
+   3          #define tempoEspera 20 //contagem do timer0 para contar 1s(20*50 000us = 1s)
+   4          
+   5          sbit greenLed1 = P1^0;
+   6          sbit redLed1 = P1^1;
+   7          sbit yellowLed = P1^2;
+   8          sbit greenLed2 = P1^3;
+   9          sbit redLed2 = P1^4;
+  10          
+  11          unsigned char ciclos=0;//contador é incrementado a cada 50000us
+  12          unsigned char tempo=0; // contador é incrementado a cada 1s
+  13          
+  14          unsigned int carsTotal = 9; //Numero de vagas no parque
+  15          unsigned char carro=0; //contador de entrada ou saida de carros
+  16          bit parkIn = 0;//S1
+  17          bit parkOut = 0; //S2
+  18          
+  19          void Init(void);
+  20          void main(void){
+  21   1          //Periphericals initialization
+  22   1          greenLed1 = 1; //Liga a Luz Verde da entrada
+  23   1          redLed1 = 0; //Desliga a Luz Vermelha da entrada
+  24   1          greenLed2 = 1; //Liga a Luz Verde da saida 
+  25   1          redLed2 = 0; //Desliga a Luz Vermelha da saida
+  26   1          yellowLed=1; //Desliga a Luz amarela
+  27   1          Init();
+  28   1              while(1){ //loop infinito
+  29   2                  if(parkIn==1){
+  30   3                      greenLed1=0; //Led verde da entrada desliga
+  31   3                      greenLed2=1; //Led verde da saida ligado
+  32   3                      redLed1=1; //Led vermelho da entrada ligado
+  33   3                      redLed2=0; //Led vermelho da saida desligado
+  34   3                  }else if(parkOut==1){
+  35   3                      greenLed1=1;//Led verde da entrada ligado
+  36   3                      greenLed2=0;//Led verde da saida desligo
+  37   3                      redLed1=0;//Led vermelho da entrada desligado
+  38   3                      redLed2=1;//Led vermelho da saida ligado
+  39   3                  }else{ //caso esteja a entrar e a sair
+  40   3                      greenLed1=0;//Led verde da entrada desligado
+  41   3                      greenLed2=0;//Led verde da saida desligado
+  42   3                      redLed1=1;//Led vermelho da entrada ligado
+  43   3                      redLed2=1;//Led vermelho da saida ligado
+  44   3                  }
+  45   2                  if(ciclos>=tempoEspera){
+  46   3                  if((parkIn || parkOut) && tempo<5){
+  47   4                      yellowLed= ~yellowLed;
+  48   4                      tempo++;
+  49   4                      ciclos=0;
+  50   4                  }else{
+  51   4                      parkIn=0;
+  52   4                      parkOut=0;
+  53   4                      yellowLed=1;
+  54   4                      tempo=0;
+C51 COMPILER V9.60.7.0   PROJETOAC3                                                        05/11/2023 11:16:23 PAGE 2   
+
+  55   4                  }
+  56   3                }
+  57   2                  P2= carsTotal; 
+  58   2              }  
+  59   1      }
+  60          void Init(void){
+  61   1          EA =1; // Dá enable às interrupçoes
+  62   1          ET0 =1; //Dá enable ao Timer
+  63   1          EX0 =1; //Dá enable a interrupçoes externas
+  64   1          EX1 =1; //Dá enable a interrupçoes externas
+  65   1          //Configuracaio Registo TMOD
+  66   1          TMOD &= 0x0F; //Limpa os 4 bits do timer 0
+  67   1          TMOD |= 0xF1; //modo 1 do timer 0 (16 bits)
+  68   1          //Configuracao TIMER 0
+  69   1          TH0 = 0x3C;//Timer 0-50 000us
+  70   1          TL0 = 0XB0;
+  71   1      
+  72   1          TR0 =1; //Comeca o timer 0
+  73   1          //ativacao no falling edge~
+  74   1          IT0 = 1;
+  75   1          IT1 = 1;
+  76   1      
+  77   1      }
+  78          void Timer0_ISR(void) interrupt 1{
+  79   1          //Configuracao Timer 0
+  80   1          TH0=0x3C; //Timer 0 -50 000us
+  81   1          TL0=0xB0;
+  82   1          ciclos++; //incrementa a cada contagem de 50 000us
+  83   1      }
+  84          void CarEntrance(void) interrupt 0{
+  85   1          if(carsTotal>0 && parkIn==0 && parkOut==0){
+  86   2              parkIn=1;
+  87   2              carsTotal--;
+  88   2          }
+  89   1      }
+  90          void CarLeave(void) interrupt 2{
+  91   1           if(carsTotal<9 && parkOut==0 && parkIn==0){
+  92   2              parkOut=1;
+  93   2              carsTotal++;
+  94   2          }
+  95   1      }
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =    198    ----
+   CONSTANT SIZE    =   ----    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =      5    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =      2    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)
